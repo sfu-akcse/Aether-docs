@@ -22,6 +22,7 @@ const sidebars = {
 
   softwareTeamSidebar: [
     "software-team/overview",
+    "software-team/socket-communication",
     {
       type: "category",
       label: "Setup",
