@@ -1,0 +1,13 @@
+services:
+  ros2-novnc:
+    build: .
+    container_name: ros2-sandbox
+    ports:
+      - "8080:8080"
+    environment:
+      # Adjust display resolution
+      - DISPLAY_WIDTH=1280
+      - DISPLAY_HEIGHT=800
+    # volumes:
+    #   - ./workspace:/root/workspace # when you want to share your code with local container
+    restart: unless-stopped
