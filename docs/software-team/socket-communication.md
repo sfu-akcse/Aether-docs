@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # Socket Communication
 
-This page explains what a socket is, why we use socket communication in Project Aether, and how a student team can start implementing it for a physical robot arm.
+This page explains what a socket is, why we use socket communication in Project Aether, and how we can start implementing it for a physical robot arm.
 
 ## What Is a Socket?
 
@@ -23,7 +23,7 @@ In many robotics projects, TCP sockets are used because they are easier to reaso
 
 ## Why We Use It in Aether
 
-Project Aether starts from hand tracking on a laptop and then converts that information into robot arm motion.
+We starts from hand tracking on a laptop and then converts that information into robot arm motion.
 
 At a high level, the flow is:
 
@@ -111,6 +111,7 @@ Client                                              Server
   |<---------------------- FIN -----------------------|
   |---------------------- ACK ----------------------->|
   |                                                   |
+
 ```
 
 This diagram shows the general idea of a TCP session:
@@ -133,7 +134,7 @@ The actual data depends on the application, but common examples include:
 - Timestamps
 - JSON objects
 
-For beginners, it is usually best to start with a format that is easy to read and debug.
+It is usually best to start with a format that is easy to read and debug.
 
 One simple JSON-style message could look like this:
 
@@ -194,7 +195,7 @@ The server should:
 
 Once inverse kinematics produces a valid target, package the output into the chosen message format and send it over the socket.
 
-At this stage, keep the format small and readable. Human-readable messages are slower than compact binary messages, but they are much easier for a student team to test during development.
+At this stage, keep the format small and readable. Human-readable messages are slower than compact binary messages, but they are much easier to test during development.
 
 ### 4. Handle failures safely
 
@@ -227,7 +228,7 @@ close socket
 
 ## Testing Tips
 
-For a student project, testing in small steps is much better than trying the full pipeline all at once.
+Testing in small steps is much better than trying the full pipeline all at once.
 
 Recommended order:
 
@@ -242,7 +243,7 @@ It is also helpful to print every sent and received message during early develop
 
 ## Common Mistakes
 
-Some common issues in student projects are:
+Some common issues are:
 
 - Client and server roles are reversed
 - IP address or port number is wrong
@@ -260,7 +261,6 @@ Before integrating socket communication into the full robot system, the team sho
 - The message format is written down clearly
 - Units are agreed on, such as millimeters or centimeters
 - The controller has a safe default action on bad input
-- The team can test without moving the full robot at unsafe speeds
 
 ## Summary
 
