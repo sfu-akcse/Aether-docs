@@ -1,3 +1,0 @@
-# Solidworks Quick Start Guide
-
-
