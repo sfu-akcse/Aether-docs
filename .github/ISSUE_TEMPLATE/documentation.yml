@@ -5,7 +5,7 @@ labels: ["documentation", "triage"]
 body:
   - type: markdown
     attributes:
-      values: |
+      value: |
         Please write the documentation as detailed as possible, including any relevant links, references, or resources that may help us understand and implement the documentation improvements or additions and screenshots.
 
   - type: textarea
@@ -34,7 +34,7 @@ body:
       required: true
 
   - type: textarea
-    id: extra resources
+    id: extra_resources
     attributes:
       label: Additional Information
       description: Provide any additional information, references, or resources that may help us understand and implement
