@@ -1,0 +1,42 @@
+name: Documentation Report
+description: Suggest topics for documentation improvements or additions to enhance the robot arm control system.
+title: "[Documentation]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      values: |
+        Please write the documentation as detailed as possible, including any relevant links, references, or resources that may help us understand and implement the documentation improvements or additions and screenshots.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Documentation topic
+      description: A clear and concise description of the documentation topic you are suggesting for improvement or addition
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: what area of the project would this documentation impact?
+      description: Select the area of the project that would be impacted by this documentation improvement or addition.
+      options:
+        - Computer Vision Node
+        - ROS 2 Communication
+        - Gazebo Simulation
+        - Socket Communication
+        - Firmware
+        - Mechanical Design
+        - Electrical Design
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra resources
+    attributes:
+      label: Additional Information
+      description: Provide any additional information, references, or resources that may help us understand and implement
+        the documentation improvements or additions (e.g., links to relevant research papers, similar implementations in other projects, screenshots).
+      placeholder: "Include any relevant links, references, or resources..."
