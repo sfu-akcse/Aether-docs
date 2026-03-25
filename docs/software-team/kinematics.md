@@ -3,6 +3,8 @@
 ## Overview
 Kinematics is the branch of mechanics that studies the motion of robot's joints and links without considering the forces or torques that cause the motion. In robotic arm control, kinematics bridges the gap between the physical layout of the robot (joint angles) and the resulting position in 3D space. 
 
+![Kinematics.png](images/Kinematics.png)
+
 ## Forward Kinematics
 Forward Kinematics is the process of calculating the postion and orientation (pose) of the robot arm based on the given joint parameters.
 
@@ -51,7 +53,7 @@ Next, calculate the horizontal distance (r) to the target and adjust the target'
 
 Lastly, apply the Law of Cosine to get the elbow angle (R3)
 
-** cos(R3) = (r * r + z' * z' - L1 * L1 - L2 * L2) / (2.0 * L1 * L2); **
+**cos(R3) = (r * r + z' * z' - L1 * L1 - L2 * L2) / (2.0 * L1 * L2);**
 
 Using R3, calculate the shoulder angle (R2) 
 
