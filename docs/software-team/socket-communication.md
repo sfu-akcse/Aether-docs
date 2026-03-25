@@ -161,6 +161,20 @@ No matter which format is used, both sides should agree on:
 
 Clear message definitions are one of the most important parts of successful socket communication.
 
+For a general Python implementation, a practical starting point is newline-delimited JSON. That means:
+
+- Every message is one JSON object
+- Every message ends with `\n`
+- The receiver reads until it finds a newline, then parses one complete message
+
+For example:
+
+```json
+{"type":"command","x":120.0,"y":35.5,"z":210.0,"gripper":"open"}
+```
+
+This format is easy to inspect in logs and easy to parse in Python.
+
 ## How To Implement It
 
 At a general level, implementation can be split into four steps.
@@ -172,18 +186,56 @@ Before writing code, decide:
 - Which side is the server
 - Which IP address and port will be used
 - What each message looks like
-- Whether the controller sends a reply
+- Whether the server sends a reply
 - How errors should be reported
 
 Without this agreement, socket bugs become difficult to debug.
+
+For the examples below, we will use this protocol:
+
+- One program runs as the socket server
+- Another program runs as the socket client
+- Transport protocol: TCP
+- Message format: newline-delimited JSON
+- Port: `5000`
+
+Each request sent from the client looks like this:
+
+```json
+{
+  "type": "command",
+  "x": 120.0,
+  "y": 35.5,
+  "z": 210.0,
+  "gripper": "open"
+}
+```
+
+The server replies with:
+
+```json
+{
+  "status": "ok",
+  "message": "Command received"
+}
+```
+
+If the request is invalid, the server replies with:
+
+```json
+{
+  "status": "error",
+  "message": "Invalid command"
+}
+```
 
 ### 2. Create the socket connection
 
 The client should:
 
 - Create a TCP socket
-- Connect to the controller
-- Confirm that the connection succeeds before sending commands
+- Connect to the server
+- Confirm that the connection succeeds before sending messages
 
 The server should:
 
@@ -191,9 +243,9 @@ The server should:
 - Listen for incoming connections
 - Accept a client connection
 
-### 3. Send commands in a consistent format
+### 3. Send messages in a consistent format
 
-Once inverse kinematics produces a valid target, package the output into the chosen message format and send it over the socket.
+Once your application produces data to send, package it into the chosen message format and send it over the socket.
 
 At this stage, keep the format small and readable. Human-readable messages are slower than compact binary messages, but they are much easier to test during development.
 
@@ -202,29 +254,175 @@ At this stage, keep the format small and readable. Human-readable messages are s
 The system should be ready for:
 
 - Connection refused
-- Controller not responding
+- Server not responding
 - Broken connection
-- Invalid command values
+- Invalid message values
 - Partial or corrupted messages
 
-If the socket fails, the program should avoid sending uncontrolled robot motions and should fall back to a safe state.
+If the socket fails, the program should stop the current operation safely and fall back to whatever error-handling behavior makes sense for the application.
 
-## Example Pseudocode
+### Practical implementation guidance
 
-This example is intentionally general and does not depend on a specific programming language.
+#### Message boundaries
 
-```text
-create TCP socket
-connect to robot controller
+Across the Python and Real Python references, the same practical lessons appear again and again. The key idea is that `TCP` gives you a reliable byte stream, not automatic message boundaries. That means your program must decide where one message ends and the next begins. In Python, a very practical beginner-friendly choice is newline-delimited `JSON`:
 
-while system is running:
-    get target position from IK module
-    format message
-    send message
-    optionally receive status
+- serialize one command as one JSON object
+- append `\n`
+- keep reading from `recv()` until a full line arrives
+- parse only after the full line is complete
 
-close socket
+This is one of the most important implementation details because many first socket programs fail by assuming one `send()` always matches one `recv()`. In reality, `TCP` may split or combine data differently, so your code must reconstruct complete messages from the byte stream.
+
+#### Start simple first
+
+Another strong recommendation from the references is to start with `blocking sockets` and a simple `request-response` loop before trying more advanced designs. A first version should usually do this:
+
+1. The server binds to a known host and port.
+2. The server listens and accepts a connection.
+3. The client connects.
+4. The client sends one well-formed command.
+5. The server validates the command and sends one reply.
+6. Both sides log what was sent and received.
+
+This keeps the first implementation easy to debug. If the basic connection, message framing, and validation are not working yet, moving to `async` or `multi-client` code usually makes debugging harder instead of easier.
+
+#### Core socket operations
+
+The references also emphasize the importance of choosing the right socket operations. In practice, a simple Python `TCP` implementation usually relies on:
+
+- `socket.socket()` to create the socket
+- `bind()`, `listen()`, and `accept()` on the server side
+- `connect()` or `socket.create_connection()` on the client side
+- `sendall()` instead of `send()` when you want to make sure the full buffer is transmitted
+- `recv()` in a loop because one call may return only part of the data
+
+For example, a minimal server setup in Python often starts like this:
+
+```python
+import socket
+
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(("0.0.0.0", 5000))
+server_socket.listen(1)
+
+conn, addr = server_socket.accept()
+print("Connected by:", addr)
 ```
+
+In this example:
+
+- `socket.socket(socket.AF_INET, socket.SOCK_STREAM)` creates an `IPv4 TCP` socket
+- `bind()` attaches the socket to an IP address and port
+- `listen()` tells the socket to wait for incoming connections
+- `accept()` blocks until a client connects and then returns a new connection socket
+
+On the client side, the connection step is usually much smaller:
+
+```python
+import socket
+
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(("127.0.0.1", 5000))
+```
+
+You can also use `socket.create_connection()` as a convenient shortcut:
+
+```python
+import socket
+
+
+client_socket = socket.create_connection(("127.0.0.1", 5000), timeout=3)
+```
+
+When sending a message, `sendall()` is generally safer than `send()` for simple application code:
+
+```python
+message = b'{"type":"command","x":120.0}\n'
+client_socket.sendall(message)
+```
+
+When receiving data, the important point is to keep reading until a full message arrives:
+
+```python
+buffer = ""
+
+while "\n" not in buffer:
+    data = client_socket.recv(1024)
+    if not data:
+        raise ConnectionError("Connection closed")
+    buffer += data.decode("utf-8")
+
+line, buffer = buffer.split("\n", 1)
+print("Received one full message:", line)
+```
+
+This pattern is important because `recv(1024)` does not mean "give me exactly one message." It means "give me up to 1024 bytes that are currently available."
+
+#### Timeouts and failure handling
+
+`Timeouts` are another important theme. A socket left in pure `blocking mode` can wait forever if the peer disappears or stops responding. For that reason, it is often safer to add `settimeout()` early, especially in robotics, where a stalled connection should not leave the system waiting indefinitely. Once timeouts are enabled, the program can detect failures earlier and switch to a safe fallback behavior.
+
+For example:
+
+```python
+import socket
+
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.settimeout(3.0)
+
+try:
+    client_socket.connect(("127.0.0.1", 5000))
+    data = client_socket.recv(1024)
+except socket.timeout:
+    print("Socket operation timed out")
+```
+
+In this example, `settimeout(3.0)` means operations such as `connect()` or `recv()` will raise a `socket.timeout` exception if they take longer than three seconds.
+
+#### Separate transport from robot logic
+
+The references also push a clear separation between `transport logic` and `application logic`. In other words:
+
+- the socket layer should focus on connecting, sending, receiving, and parsing
+- the application layer should decide what `x`, `y`, `z`, or `gripper` actually mean
+- validation should happen before the command reaches the robot logic
+
+That separation makes the code easier to test. You can first verify that the socket layer correctly receives a valid JSON line and returns a response. Only after that should you attach it to inverse kinematics, motion planning, or gripper control.
+
+#### What to use as the project grows
+
+As systems grow, the references point to three common next steps:
+
+- `socketserver` when you want a more structured server with handler classes
+- `selectors` when one process must watch multiple sockets efficiently
+- `asyncio` streams when the program must handle network `I/O` together with other asynchronous tasks
+
+These tools are valuable, but they are usually second-step tools. For most first implementations in a robotics project, a plain TCP client and server with clear framing, validation, logging, and timeouts is the best place to start.
+
+### Suggested reading path
+
+If you are implementing this for the first time, a practical order is:
+
+1. Learn the request-response model and message framing idea.
+2. Build a simple blocking TCP client and server.
+3. Add newline-delimited JSON parsing.
+4. Add validation and error replies.
+5. Add timeouts and reconnection strategy.
+6. Only then consider `socketserver`, `selectors`, or `asyncio`.
+
+### References for deeper detail
+
+- Python `socket` documentation: https://docs.python.org/3/library/socket.html
+- Python Socket Programming HOWTO: https://docs.python.org/3/howto/sockets.html
+- Python `socketserver` documentation: https://docs.python.org/3/library/socketserver.html
+- Python `selectors` documentation: https://docs.python.org/3/library/selectors.html
+- Python `asyncio` streams documentation: https://docs.python.org/3/library/asyncio-stream.html
+- Real Python socket tutorial: https://realpython.com/python-sockets/
+- Real Python `socket` reference: https://realpython.com/ref/stdlib/socket/
 
 ## Testing Tips
 
@@ -233,13 +431,20 @@ Testing in small steps is much better than trying the full pipeline all at once.
 Recommended order:
 
 1. Test a local socket connection on one machine.
-2. Test sending a fixed sample command.
-3. Confirm the controller receives the exact message.
-4. Connect the message to the inverse kinematics output.
-5. Add the gripper command.
+2. Test sending a fixed sample request.
+3. Confirm the server receives the exact message.
+4. Connect the message to real application data.
+5. Add any extra fields your protocol needs.
 6. Add reconnection and error handling.
 
 It is also helpful to print every sent and received message during early development.
+
+It is also a good idea to test failure cases on purpose:
+
+- Send invalid JSON
+- Send a message with a missing field
+- Disconnect the client while the server is waiting
+- Stop the server while the client is still running
 
 ## Common Mistakes
 
@@ -249,19 +454,21 @@ Some common issues are:
 - IP address or port number is wrong
 - Message format is not clearly defined
 - Numbers are sent in different units on each side
-- Messages are sent too quickly for the controller to process
+- One side expects newline-delimited messages but the other side does not send `\n`
+- JSON is sent correctly, but the receiver tries to parse before a full message arrives
+- Messages are sent too quickly for the server to process
 - No safe behavior exists when the connection drops
 
 ## Suggested Team Checklist
 
 Before integrating socket communication into the full robot system, the team should confirm:
 
-- The controller IP address and port are known
+- The server IP address and port are known
 - The client/server roles are documented
 - The message format is written down clearly
-- Units are agreed on, such as millimeters or centimeters
-- The controller has a safe default action on bad input
+- Units or field meanings are agreed on
+- The server has a safe default action on bad input
 
 ## Summary
 
-In Project Aether, socket communication is the bridge between software running on the laptop and the physical robot arm. The exact code may change depending on the robot controller, but the core idea stays the same: establish a connection, send well-defined commands, and handle failures safely.
+Socket communication is a reusable pattern for connecting two programs over a network. The exact application code will change from project to project, but the development pattern stays the same: define the protocol clearly, implement both sides consistently, and handle failures safely. With the Python server and client examples above, another developer should be able to build, test, and extend a socket layer directly from this document.
