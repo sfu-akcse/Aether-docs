@@ -24,6 +24,7 @@ const sidebars = {
     "software-team/overview",
     "software-team/socket-communication",
     "software-team/machine-learning",
+    "software-team/logging_tool",
     {
       type: "category",
       label: "Setup",
