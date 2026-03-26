@@ -22,6 +22,9 @@ const sidebars = {
 
   softwareTeamSidebar: [
     "software-team/overview",
+    "software-team/socket-communication",
+    "software-team/python-opencv-mediapipe",
+    "software-team/logging_tool",
     {
       type: "category",
       label: "Setup",
