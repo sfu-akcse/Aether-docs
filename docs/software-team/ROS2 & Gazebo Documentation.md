@@ -37,6 +37,88 @@ https://docs.ros.org/en/humble/How-To-Guides/Setup-ROS-2-with-VSCode-and-Docker-
 
 https://discuss.google.dev/t/issues-deploying-gazebo-novnc-docker-on-cloud-run/192366
 
+### (3) Codes
+- docker-compose.yml
+```yml
+services:
+  ros2-novnc:
+    build: .
+    container_name: ros2-sandbox
+    ports:
+      - "8080:8080"
+    environment:
+      # Adjust display resolution
+      - DISPLAY_WIDTH=1280
+      - DISPLAY_HEIGHT=800
+    # volumes:
+    #   - ./workspace:/root/workspace # when you want to share your code with local container
+    restart: unless-stopped
+```
+- Dockerfile
+```dockerfile
+FROM osrf/ros:humble-desktop-full
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:0.0
+ENV DISPLAY_WIDTH=1280
+ENV DISPLAY_HEIGHT=800
+
+# Install essential package
+RUN apt-get update && apt-get install -y \
+    bash \
+    fluxbox \
+    net-tools \
+    novnc \
+    supervisor \
+    x11vnc \
+    xvfb \
+    xterm \
+    python3-pip \
+    python3-websockify \
+    ros-humble-gazebo-ros-pkgs \
+    && apt-get autoclean \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# noVNC setting
+WORKDIR /root/
+RUN ln -s /usr/share/novnc/vnc_lite.html /usr/share/novnc/index.html
+
+# Copying supervisor setting file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose the port
+EXPOSE 8080
+
+# Starting supervisor when the container starts
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+```
+- supervisord.conf
+```conf
+[supervisord]
+nodaemon=true
+
+[program:xvfb]
+command=Xvfb :0 -screen 0 "%(ENV_DISPLAY_WIDTH)s"x"%(ENV_DISPLAY_HEIGHT)s"x24 -listen tcp -ac
+autorestart=true
+
+[program:x11vnc]
+command=x11vnc -forever -shared -display :0
+autorestart=true
+
+[program:fluxbox]
+command=/usr/bin/startfluxbox
+autorestart=true
+
+[program:novnc]
+command=websockify --web=/usr/share/novnc/ 8080 localhost:5900
+autorestart=true
+
+[program:xterm]
+command=xterm -display :0
+autorestart=true
+```
+
 ## 3. What is the core logic?
 ### (1) ROS2
 ROS2 is not a single engine, but a distributed communication system where nodes are connected and exchange data through standardized communication mechanisms.
