@@ -97,7 +97,7 @@ Although Python and C++ use different logging APIs, ROS 2 automatically aggregat
 
 This enables centralized monitoring and debugging across the entire system regardless of implementation language.
 
-### When to Use ROS 2 Logging vs Native Logging
+#### When to Use ROS 2 Logging vs Native Logging
 
 Logging approach should be chosen based on where the code is running:
 
@@ -109,7 +109,9 @@ Logging approach should be chosen based on where the code is running:
 
 This separation ensures both **system-wide observability** (via ROS 2) and **modular, reusable components** (via native logging).
 
-## Log Monitoring Tool
+---
+
+## 5. Log Monitoring Tool
 
 - **rqt_console** is a GUI tool for viewing and filtering logs from all ROS 2 nodes in one place.
 
@@ -121,7 +123,7 @@ It is especially useful when multiple nodes (Python and C++) are running simulta
 - Filter logs by severity (DEBUG, INFO, WARN, ERROR, FATAL)  
 - Filter logs by node name (e.g., VISION_NODE, CONTROL_NODE)  
 
-### Benefits
+#### Benefits
 
 - Centralized visibility across Python and C++ nodes
 - Filtering by log level (DEBUG → FATAL)
