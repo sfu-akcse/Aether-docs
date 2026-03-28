@@ -31,7 +31,9 @@ const sidebars = {
       ],
     },
   ],
-  mechanicalTeamSidebar: ["mechanical-team/overview"],
+  mechanicalTeamSidebar: ["mechanical-team/overview",
+    "mechanical-team/servo_driver"
+  ],
   tutorialSidebar: [
     "intro",
     {
