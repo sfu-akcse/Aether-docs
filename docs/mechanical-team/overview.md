@@ -4,7 +4,7 @@
 
 To design and build a robotic arm that can mirror human movements and perform grabbing tasks
 
-#### Technical milestones
+#### Technical Milestones
 
 Mechanical & Integration
 
