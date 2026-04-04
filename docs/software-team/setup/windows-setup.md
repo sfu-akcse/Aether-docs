@@ -81,3 +81,8 @@ Docker containers cannot natively access Windows USB devices. To provide the con
     export CAMERA_SOURCE=http://host.docker.internal:8080/video.mjpg
     python3 src/main.py
     ```
+### Expected Result
+
+If the WSL2/devcontainer setup was done correctly, the expected result is for 'MediaPipe Hands' to start through Linux.
+
+![MediaPipe Hands Example](../resources/images/wsl_tutorial.png)
