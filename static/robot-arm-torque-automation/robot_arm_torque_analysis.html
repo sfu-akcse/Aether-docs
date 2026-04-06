@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Robot Arm Torque Dashboard (ST3215)</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --card:#121a27; --muted:#9fb0c7; --text:#e8f0ff;
+      --accent:#66a3ff; --warn:#ffcc66; --bad:#ff6b6b; --good:#63e6be;
+      --border:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;}
+    body{margin:0;background:radial-gradient(1200px 700px at 20% 0%, rgba(102,163,255,.18), transparent 55%),
+                         radial-gradient(900px 600px at 90% 10%, rgba(99,230,190,.14), transparent 50%),
+                         var(--bg); color:var(--text);}
+    header{padding:28px 18px 12px; max-width:1100px; margin:0 auto;}
+    h1{margin:0 0 6px; font-size:22px; letter-spacing:.2px;}
+    .sub{color:var(--muted); font-size:13px; line-height:1.4}
+    main{max-width:1100px; margin:0 auto; padding:12px 18px 28px;}
+    .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr; } }
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+          border:1px solid var(--border); border-radius:14px; padding:14px 14px 12px;}
+    .card h2{margin:0 0 10px; font-size:15px;}
+    .row{display:grid; grid-template-columns: 180px 1fr 88px; gap:10px; align-items:center; margin:10px 0;}
+    .row small{color:var(--muted)}
+    input[type="range"]{width:100%;}
+    input[type="number"]{
+      width:100%; background:rgba(0,0,0,.22); color:var(--text);
+      border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:13px;
+    }
+    .pair{display:flex; gap:8px; align-items:center;}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+          border:1px solid var(--border); background:rgba(0,0,0,.18); color:var(--muted); font-size:12px;}
+    .kpi{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;}
+    .k{border:1px solid var(--border); border-radius:12px; padding:10px; background:rgba(0,0,0,.16);}
+    .k .t{font-size:12px; color:var(--muted); margin-bottom:4px;}
+    .k .v{font-size:18px; font-weight:650; letter-spacing:.2px;}
+    .k .s{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.35}
+    .bar{height:10px; border-radius:999px; background:rgba(255,255,255,.07); overflow:hidden; margin-top:6px;}
+    .bar > div{height:100%; width:0%; background:var(--good);}
+    .tag{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; margin-left:8px;}
+    .tag.good{background:rgba(99,230,190,.15); color:var(--good); border:1px solid rgba(99,230,190,.35);}
+    .tag.warn{background:rgba(255,204,102,.14); color:var(--warn); border:1px solid rgba(255,204,102,.35);}
+    .tag.bad{background:rgba(255,107,107,.14); color:var(--bad); border:1px solid rgba(255,107,107,.35);}
+    .note{color:var(--muted); font-size:12px; line-height:1.45; margin-top:8px}
+    .mono{font-variant-numeric: tabular-nums;}
+    footer{max-width:1100px; margin:0 auto; padding:0 18px 22px; color:var(--muted); font-size:12px; line-height:1.45}
+    .split{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    @media (max-width: 620px){ .split{grid-template-columns:1fr;} .row{grid-template-columns: 1fr;} }
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    button{
+      background:rgba(102,163,255,.14); color:var(--text);
+      border:1px solid rgba(102,163,255,.35); border-radius:12px; padding:9px 12px; cursor:pointer;
+      font-size:13px;
+    }
+    button:hover{filter:brightness(1.08)}
+    .warnbox{border-left:3px solid rgba(255,204,102,.7); padding:10px 12px; background:rgba(255,204,102,.08);
+             border-radius:12px; margin-top:10px; color:var(--muted); font-size:12px; line-height:1.45;}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Robot Arm Torque Dashboard (ST3215, payload fixed at 300g)</h1>
+  <div class="sub">
+    Use the sliders to adjust <b>Claw / Limb1 / Limb2 length</b> or <b>mass</b>. Mass is automatically linked in direct proportion to length (and vice versa), and each joint's static torque is updated in real time for the fully horizontal worst-case position.
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card">
+    <h2>Inputs (6 sliders: length / mass pairs)</h2>
+
+    <div class="split">
+      <div>
+        <div class="pill">Fixed: Payload = <span class="mono">0.300 kg</span></div>
+        <div class="pill">Fixed: ST3215 mass = <span class="mono">0.055 kg</span></div>
+      </div>
+      <div>
+        <div class="pill">Rated torque: wrist/elbow = <span class="mono">10 kg·cm</span></div>
+        <div class="pill">Rated torque: shoulder (dual) = <span class="mono">20 kg·cm</span></div>
+      </div>
+    </div>
+
+    <!-- Claw -->
+    <div class="row">
+      <div><b>Claw length</b><br><small>(cm)</small></div>
+      <input id="clawLen" type="range" min="4" max="16" step="0.1">
+      <input id="clawLenNum" type="number" min="4" max="16" step="0.1">
+    </div>
+    <div class="row">
+      <div><b>Claw mass</b><br><small>(kg)</small></div>
+      <input id="clawMass" type="range" min="0.02" max="0.20" step="0.001">
+      <input id="clawMassNum" type="number" min="0.02" max="0.20" step="0.001">
+    </div>
+
+    <!-- Limb1 -->
+    <div class="row">
+      <div><b>Limb1 length</b><br><small>(cm, forearm)</small></div>
+      <input id="limb1Len" type="range" min="6" max="20" step="0.1">
+      <input id="limb1LenNum" type="number" min="6" max="20" step="0.1">
+    </div>
+    <div class="row">
+      <div><b>Limb1 mass</b><br><small>(kg)</small></div>
+      <input id="limb1Mass" type="range" min="0.02" max="0.25" step="0.001">
+      <input id="limb1MassNum" type="number" min="0.02" max="0.25" step="0.001">
+    </div>
+
+    <!-- Limb2 -->
+    <div class="row">
+      <div><b>Limb2 length</b><br><small>(cm, upper arm)</small></div>
+      <input id="limb2Len" type="range" min="6" max="24" step="0.1">
+      <input id="limb2LenNum" type="number" min="6" max="24" step="0.1">
+    </div>
+    <div class="row">
+      <div><b>Limb2 mass</b><br><small>(kg)</small></div>
+      <input id="limb2Mass" type="range" min="0.02" max="0.30" step="0.001">
+      <input id="limb2MassNum" type="number" min="0.02" max="0.30" step="0.001">
+    </div>
+
+    <div class="warnbox">
+      <b>Important:</b> Mass is linked directly to length. If you change a length, the mass updates automatically. If you change a mass, the matching length updates automatically as well.<br><br><span class="mono">Reference values</span> follow your provided assumptions: Claw <span class="mono">70g</span>, Limb1 <span class="mono">75g</span>, Limb2 <span class="mono">75g</span>. (Reference lengths are set as defaults and can be restored anytime with Reset.)
+    </div>
+
+    <div class="btns">
+      <button id="reset">Reset to defaults</button>
+      <button id="copy">Copy current setup (text)</button>
+    </div>
+
+    <div class="note">
+      Torque model (static, horizontal):
+      <ul>
+        <li>Payload COM assumed at <span class="mono">0.85×</span> claw length</li>
+        <li>Claw structure COM at <span class="mono">0.50×</span></li>
+        <li>The 2 distal wrist servos (grip + spread) COM at <span class="mono">0.30×</span></li>
+        <li>Each limb is treated as a uniform beam with COM at <span class="mono">0.50×</span></li>
+      </ul>
+      These ratios can be adjusted easily in the code if needed.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Outputs (live torque + gripping torque)</h2>
+
+    <div class="kpi">
+      <div class="k">
+        <div class="t">Wrist pitch torque</div>
+        <div class="v mono" id="tw">—</div>
+        <div class="s" id="twS"></div>
+        <div class="bar"><div id="twB"></div></div>
+      </div>
+      <div class="k">
+        <div class="t">Elbow torque</div>
+        <div class="v mono" id="te">—</div>
+        <div class="s" id="teS"></div>
+        <div class="bar"><div id="teB"></div></div>
+      </div>
+      <div class="k">
+        <div class="t">Shoulder torque (total)</div>
+        <div class="v mono" id="ts">—</div>
+        <div class="s" id="tsS"></div>
+        <div class="bar"><div id="tsB"></div></div>
+      </div>
+      <div class="k">
+        <div class="t">Shoulder torque (per motor, assuming equal sharing by 2 motors)</div>
+        <div class="v mono" id="tsp">—</div>
+        <div class="s" id="tspS"></div>
+        <div class="bar"><div id="tspB"></div></div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+
+    <h2 style="margin-top:0">Gripping torque calculation</h2>
+
+    <div class="row">
+      <div><b>Friction coefficient μ</b><br><small>(pad / surface)</small></div>
+      <input id="mu" type="range" min="0.2" max="0.9" step="0.01">
+      <input id="muNum" type="number" min="0.2" max="0.9" step="0.01">
+    </div>
+    <div class="row">
+      <div><b>Effective linkage radius r</b><br><small>(cm, grip axis)</small></div>
+      <input id="r" type="range" min="0.5" max="3.5" step="0.1">
+      <input id="rNum" type="number" min="0.5" max="3.5" step="0.1">
+    </div>
+    <div class="row">
+      <div><b>Safety factor SF</b><br><small>(recommended 2 to 4)</small></div>
+      <input id="sf" type="range" min="1" max="6" step="0.1">
+      <input id="sfNum" type="number" min="1" max="6" step="0.1">
+    </div>
+
+    <div class="kpi">
+      <div class="k">
+        <div class="t">Required gripping torque (with SF)</div>
+        <div class="v mono" id="tg">—</div>
+        <div class="s" id="tgS"></div>
+        <div class="bar"><div id="tgB"></div></div>
+      </div>
+      <div class="k">
+        <div class="t">Grip servo margin (based on ST3215 rated 10 kg·cm)</div>
+        <div class="v mono" id="tgM">—</div>
+        <div class="s" id="tgMS"></div>
+        <div class="bar"><div id="tgMB"></div></div>
+      </div>
+    </div>
+
+    <div class="note">
+      This grip estimate uses the minimum normal force needed to prevent slipping: <span class="mono">2μN ≥ W</span> → <span class="mono">N ≥ W/(2μ)</span>. Actual required servo torque can change depending on the finger linkage, gear ratio, and contact geometry.
+    </div>
+
+  </section>
+</main>
+
+<footer>
+  <b>Usage notes</b>
+  <ul>
+    <li>The elbow is often the first joint to become limiting. If the torque bar moves into <span style="color:var(--warn)">yellow</span> or <span style="color:var(--bad)">red</span>, reduce length/mass or lighten the structure.</li>
+    <li>This is a static horizontal worst-case estimate. Real acceleration, shock, friction, and mechanism losses require more margin, especially at the elbow.</li>
+    <li>The shoulder model assumes the 2 motors share load equally. In practice, frame stiffness and mechanism mismatch can change load sharing.</li>
+  </ul>
+</footer>
+
+<script>
+(function(){
+  // ====== Fixed constants ======
+  const payloadKg = 0.300;
+  const servoKg = 0.055;
+
+  // Motors placement (per your spec)
+  // Wrist has 3 motors total:
+  // - 1 motor is the wrist pitch actuator (at the wrist joint): counted downstream of elbow/shoulder, but NOT in wrist torque itself.
+  // - 2 motors are in the claw/gripper mechanism (distal, carried by wrist): included in wrist torque.
+  const distalWristMotorsKg = 2 * servoKg; // gripper + spread
+  const wristPitchMotorKg = servoKg;
+  const elbowMotorKg = servoKg;
+  const shoulderMotors = 2;
+
+  // Rated torques
+  const ratedWrist = 10.0;
+  const ratedElbow = 10.0;
+  const ratedShoulderTotal = 20.0; // 2 motors assumed
+
+  // COM factors
+  const payloadCOM = 0.85; // payload center from wrist along claw length
+  const clawCOM = 0.50;
+  const distalServoCOM = 0.30;
+
+  // Gripping constants
+  const g = 9.81;
+
+  // ====== Reference masses & lengths for proportional scaling ======
+  // User specified: claw = 70g, each limb = 75g
+  // We need a reference length to define "mass per cm".
+  // We'll set reasonable defaults and allow scaling by the linked sliders.
+  const ref = {
+    clawLen: 8.0,      clawMass: 0.070,
+    limb1Len: 10.0,    limb1Mass: 0.075,
+    limb2Len: 12.0,    limb2Mass: 0.075
+  };
+
+  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+  function fmt(x, d=2){ return (Math.round(x * Math.pow(10,d))/Math.pow(10,d)).toFixed(d); }
+
+  // ====== Elements ======
+  const el = (id)=>document.getElementById(id);
+
+  const sliders = {
+    clawLen: el("clawLen"), clawLenNum: el("clawLenNum"),
+    clawMass: el("clawMass"), clawMassNum: el("clawMassNum"),
+    limb1Len: el("limb1Len"), limb1LenNum: el("limb1LenNum"),
+    limb1Mass: el("limb1Mass"), limb1MassNum: el("limb1MassNum"),
+    limb2Len: el("limb2Len"), limb2LenNum: el("limb2LenNum"),
+    limb2Mass: el("limb2Mass"), limb2MassNum: el("limb2MassNum"),
+    mu: el("mu"), muNum: el("muNum"),
+    r: el("r"), rNum: el("rNum"),
+    sf: el("sf"), sfNum: el("sfNum")
+  };
+
+  function linkPair(lenId, massId, refLen, refMass){
+    // mass = refMass * (len/refLen)
+    const len = parseFloat(sliders[lenId].value);
+    const mass = refMass * (len/refLen);
+
+    sliders[massId].value = clamp(mass, parseFloat(sliders[massId].min), parseFloat(sliders[massId].max));
+    sliders[massId + "Num"].value = sliders[massId].value;
+
+    sliders[lenId + "Num"].value = sliders[lenId].value;
+  }
+
+  function linkPairReverse(massId, lenId, refLen, refMass){
+    // len = refLen * (mass/refMass)
+    const mass = parseFloat(sliders[massId].value);
+    const len = refLen * (mass/refMass);
+
+    sliders[lenId].value = clamp(len, parseFloat(sliders[lenId].min), parseFloat(sliders[lenId].max));
+    sliders[lenId + "Num"].value = sliders[lenId].value;
+
+    sliders[massId + "Num"].value = sliders[massId].value;
+  }
+
+  function statusTag(ratio){
+    if (ratio < 0.70) return {cls:"good", txt:"Good margin"};
+    if (ratio < 0.90) return {cls:"warn", txt:"Tight"};
+    return {cls:"bad", txt:"Over / risky"};
+  }
+
+  function setBar(barEl, ratio){
+    const pct = clamp(ratio*100, 0, 140);
+    barEl.style.width = pct + "%";
+    barEl.style.background = (ratio < 0.70) ? "var(--good)" : (ratio < 0.90) ? "var(--warn)" : "var(--bad)";
+  }
+
+  function compute(){
+    const clawLen = parseFloat(sliders.clawLen.value);   // cm
+    const clawMass = parseFloat(sliders.clawMass.value); // kg
+
+    const L1 = parseFloat(sliders.limb1Len.value);       // cm (forearm)
+    const M1 = parseFloat(sliders.limb1Mass.value);      // kg
+
+    const L2 = parseFloat(sliders.limb2Len.value);       // cm (upper arm)
+    const M2 = parseFloat(sliders.limb2Mass.value);      // kg
+
+    // --- Distances from wrist pivot ---
+    const dPayloadW = payloadCOM * clawLen;
+    const dClawW = clawCOM * clawLen;
+    const dDistalServosW = distalServoCOM * clawLen;
+
+    // --- Wrist torque about wrist pitch ---
+    const T_wrist =
+      payloadKg * dPayloadW +
+      clawMass * dClawW +
+      distalWristMotorsKg * dDistalServosW; // kg*cm => kg·cm
+
+    // --- Elbow torque about elbow (Limb1) ---
+    const T_elbow =
+      payloadKg * (L1 + dPayloadW) +
+      clawMass * (L1 + dClawW) +
+      distalWristMotorsKg * (L1 + dDistalServosW) +
+      wristPitchMotorKg * (L1) +
+      M1 * (L1/2);
+
+    // --- Shoulder torque about shoulder (Limb2) ---
+    const T_shoulder =
+      payloadKg * (L2 + L1 + dPayloadW) +
+      clawMass * (L2 + L1 + dClawW) +
+      distalWristMotorsKg * (L2 + L1 + dDistalServosW) +
+      wristPitchMotorKg * (L2 + L1) +
+      M1 * (L2 + L1/2) +
+      elbowMotorKg * (L2) +
+      M2 * (L2/2);
+
+    const T_shoulder_per = T_shoulder / shoulderMotors;
+
+    // --- Gripping torque ---
+    const mu = parseFloat(sliders.mu.value);
+    const r_cm = parseFloat(sliders.r.value);
+    const sf = parseFloat(sliders.sf.value);
+
+    const W = payloadKg * g; // N
+    const N_needed = W / (2 * mu); // N (per side normal force)
+    const r_m = r_cm / 100.0;
+    const tau_Nm = N_needed * r_m; // per side effective (simplified)
+    const tau_kgcm = tau_Nm / 0.0980665; // 1 kg·cm = 0.0980665 N·m
+    const T_grip = tau_kgcm * sf;
+
+    // --- Render ---
+    renderTorque("tw", "twS", "twB", T_wrist, ratedWrist, "Wrist");
+    renderTorque("te", "teS", "teB", T_elbow, ratedElbow, "Elbow");
+    renderTorque("ts", "tsS", "tsB", T_shoulder, ratedShoulderTotal, "Shoulder (total)");
+    renderTorque("tsp", "tspS", "tspB", T_shoulder_per, ratedWrist, "Shoulder (per motor)");
+
+    // Grip render (compare to 10)
+    const ratioG = T_grip / ratedWrist;
+    const tagG = statusTag(ratioG);
+    el("tg").innerHTML = `${fmt(T_grip,2)} kg·cm <span class="tag ${tagG.cls}">${tagG.txt}</span>`;
+    el("tgS").textContent = `μ=${fmt(mu,2)}, r=${fmt(r_cm,1)}cm, SF=${fmt(sf,1)} → W=2.94N`;
+    setBar(el("tgB"), ratioG);
+
+    const margin = ratedWrist - T_grip;
+    const marginRatio = clamp(margin / ratedWrist, -0.5, 1.2);
+    el("tgM").innerHTML = `${fmt(margin,2)} kg·cm`;
+    el("tgMS").textContent = (margin >= 0)
+      ? `grip 서보 Good margin(정적 기준).`
+      : `This exceeds rated torque. Recheck geometry, friction, or mechanism ratio.`;
+    setBar(el("tgMB"), 1 - marginRatio); // visualize usage
+
+    // Store snapshot for copy
+    window.__snapshot = {
+      clawLen, clawMass, limb1Len:L1, limb1Mass:M1, limb2Len:L2, limb2Mass:M2,
+      Tw:T_wrist, Te:T_elbow, Ts:T_shoulder, TsPer:T_shoulder_per,
+      mu, r_cm, sf, Tgrip:T_grip
+    };
+  }
+
+  function renderTorque(vId, sId, bId, T, rated, label){
+    const ratio = T / rated;
+    const tag = statusTag(ratio);
+    el(vId).innerHTML = `${fmt(T,2)} kg·cm <span class="tag ${tag.cls}">${tag.txt}</span>`;
+    el(sId).textContent = `${label}: usage ${fmt(ratio*100,0)}% (rated ${rated} kg·cm)`;
+    setBar(el(bId), ratio);
+  }
+
+  function bindLinkedControls(){
+    // Init defaults
+    sliders.clawLen.value = ref.clawLen;
+    sliders.limb1Len.value = ref.limb1Len;
+    sliders.limb2Len.value = ref.limb2Len;
+
+    // Derived masses from lengths
+    linkPair("clawLen","clawMass", ref.clawLen, ref.clawMass);
+    linkPair("limb1Len","limb1Mass", ref.limb1Len, ref.limb1Mass);
+    linkPair("limb2Len","limb2Mass", ref.limb2Len, ref.limb2Mass);
+
+    // Grip defaults
+    sliders.mu.value = 0.50; sliders.muNum.value = 0.50;
+    sliders.r.value = 1.5; sliders.rNum.value = 1.5;
+    sliders.sf.value = 3.0; sliders.sfNum.value = 3.0;
+
+    // Length -> Mass (linked)
+    sliders.clawLen.addEventListener("input", ()=>{ linkPair("clawLen","clawMass", ref.clawLen, ref.clawMass); compute(); });
+    sliders.limb1Len.addEventListener("input", ()=>{ linkPair("limb1Len","limb1Mass", ref.limb1Len, ref.limb1Mass); compute(); });
+    sliders.limb2Len.addEventListener("input", ()=>{ linkPair("limb2Len","limb2Mass", ref.limb2Len, ref.limb2Mass); compute(); });
+
+    // Number inputs for length
+    sliders.clawLenNum.addEventListener("input", ()=>{
+      sliders.clawLen.value = clamp(parseFloat(sliders.clawLenNum.value||ref.clawLen), parseFloat(sliders.clawLen.min), parseFloat(sliders.clawLen.max));
+      linkPair("clawLen","clawMass", ref.clawLen, ref.clawMass); compute();
+    });
+    sliders.limb1LenNum.addEventListener("input", ()=>{
+      sliders.limb1Len.value = clamp(parseFloat(sliders.limb1LenNum.value||ref.limb1Len), parseFloat(sliders.limb1Len.min), parseFloat(sliders.limb1Len.max));
+      linkPair("limb1Len","limb1Mass", ref.limb1Len, ref.limb1Mass); compute();
+    });
+    sliders.limb2LenNum.addEventListener("input", ()=>{
+      sliders.limb2Len.value = clamp(parseFloat(sliders.limb2LenNum.value||ref.limb2Len), parseFloat(sliders.limb2Len.min), parseFloat(sliders.limb2Len.max));
+      linkPair("limb2Len","limb2Mass", ref.limb2Len, ref.limb2Mass); compute();
+    });
+
+    // Mass -> Length (reverse linked)
+    sliders.clawMass.addEventListener("input", ()=>{ linkPairReverse("clawMass","clawLen", ref.clawLen, ref.clawMass); compute(); });
+    sliders.limb1Mass.addEventListener("input", ()=>{ linkPairReverse("limb1Mass","limb1Len", ref.limb1Len, ref.limb1Mass); compute(); });
+    sliders.limb2Mass.addEventListener("input", ()=>{ linkPairReverse("limb2Mass","limb2Len", ref.limb2Len, ref.limb2Mass); compute(); });
+
+    sliders.clawMassNum.addEventListener("input", ()=>{
+      sliders.clawMass.value = clamp(parseFloat(sliders.clawMassNum.value||ref.clawMass), parseFloat(sliders.clawMass.min), parseFloat(sliders.clawMass.max));
+      linkPairReverse("clawMass","clawLen", ref.clawLen, ref.clawMass); compute();
+    });
+    sliders.limb1MassNum.addEventListener("input", ()=>{
+      sliders.limb1Mass.value = clamp(parseFloat(sliders.limb1MassNum.value||ref.limb1Mass), parseFloat(sliders.limb1Mass.min), parseFloat(sliders.limb1Mass.max));
+      linkPairReverse("limb1Mass","limb1Len", ref.limb1Len, ref.limb1Mass); compute();
+    });
+    sliders.limb2MassNum.addEventListener("input", ()=>{
+      sliders.limb2Mass.value = clamp(parseFloat(sliders.limb2MassNum.value||ref.limb2Mass), parseFloat(sliders.limb2Mass.min), parseFloat(sliders.limb2Mass.max));
+      linkPairReverse("limb2Mass","limb2Len", ref.limb2Len, ref.limb2Mass); compute();
+    });
+
+    // Grip controls
+    ["mu","r","sf"].forEach(id=>{
+      sliders[id].addEventListener("input", ()=>{
+        sliders[id+"Num"].value = sliders[id].value;
+        compute();
+      });
+      sliders[id+"Num"].addEventListener("input", ()=>{
+        sliders[id].value = clamp(parseFloat(sliders[id+"Num"].value||sliders[id].value), parseFloat(sliders[id].min), parseFloat(sliders[id].max));
+        compute();
+      });
+    });
+
+    // Buttons
+    el("reset").addEventListener("click", ()=>{
+      sliders.clawLen.value = ref.clawLen;
+      sliders.limb1Len.value = ref.limb1Len;
+      sliders.limb2Len.value = ref.limb2Len;
+
+      linkPair("clawLen","clawMass", ref.clawLen, ref.clawMass);
+      linkPair("limb1Len","limb1Mass", ref.limb1Len, ref.limb1Mass);
+      linkPair("limb2Len","limb2Mass", ref.limb2Len, ref.limb2Mass);
+
+      sliders.mu.value = 0.50; sliders.muNum.value = 0.50;
+      sliders.r.value = 1.5; sliders.rNum.value = 1.5;
+      sliders.sf.value = 3.0; sliders.sfNum.value = 3.0;
+
+      compute();
+    });
+
+    el("copy").addEventListener("click", async ()=>{
+      const s = window.__snapshot || {};
+      const txt =
+`[Robot Arm Torque Snapshot]
+Payload: 0.300 kg (fixed)
+Claw: ${fmt(s.clawLen,2)} cm, ${fmt(s.clawMass,3)} kg
+Limb1 (forearm): ${fmt(s.limb1Len,2)} cm, ${fmt(s.limb1Mass,3)} kg
+Limb2 (upper): ${fmt(s.limb2Len,2)} cm, ${fmt(s.limb2Mass,3)} kg
+
+Torques (kg·cm, static worst-case horizontal):
+Wrist: ${fmt(s.Tw,2)} / 10
+Elbow: ${fmt(s.Te,2)} / 10
+Shoulder total: ${fmt(s.Ts,2)} / 20
+Shoulder per motor (2): ${fmt(s.TsPer,2)} / 10
+
+Grip:
+μ=${fmt(s.mu,2)}, r=${fmt(s.r_cm,1)} cm, SF=${fmt(s.sf,1)}
+Required grip torque: ${fmt(s.Tgrip,2)} / 10
+`;
+      try{
+        await navigator.clipboard.writeText(txt);
+        alert("Copied to clipboard.");
+      }catch(e){
+        prompt("Copy the text below:", txt);
+      }
+    });
+
+    compute();
+  }
+
+  bindLinkedControls();
+})();
+</script>
+</body>
+</html>
