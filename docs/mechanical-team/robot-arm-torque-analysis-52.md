@@ -13,7 +13,7 @@ This work includes:
 ## Interactive Dashboard
 You can access the dashboard here:
 
-[Open the robot arm torque dashboard](/Aether-docs/robot-arm-torque-dashboard/)
+[Open the robot arm torque dashboard](/robot-arm-torque-automation/robot_arm_torque_analysis.html)
 
 ## Notes
 The dashboard is based on:
