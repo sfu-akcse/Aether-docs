@@ -11,9 +11,7 @@ This work includes:
 - an interactive HTML dashboard for live parameter adjustment
 
 ## Interactive Dashboard
-You can access the dashboard here:
-
-[Open the robot arm torque dashboard](/robot-arm-torque-automation/robot_arm_torque_analysis.html)
+An interactive HTML dashboard is included in this pull request for robot arm torque exploration.
 
 ## Notes
 The dashboard is based on:
