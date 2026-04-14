@@ -189,6 +189,12 @@ Use the provided shell script from the project root:
 ./scripts/run_tests.sh
 ```
 
+This script will:
+
+-   Configure the project using CMake
+-   Build the test executable
+-   Run all gtest test cases
+
 ---
 
 ## 9. Expected Output
@@ -220,3 +226,46 @@ Expected equality of these values:
   3
 [  FAILED  ] SampleTest.Addition (0 ms)
 ```
+
+---
+
+## 11. Screenshot
+
+The following screenshot shows the successful execution of the gtest test suite.
+
+-   All test cases are executed
+-   All tests pass successfully
+-   The final output shows [ PASSED ]
+
+![gtest-screenshot](</docs/software-team/resources/images/gtest-output.png>)
+
+---
+
+## 12. Configuration Summary
+
+**Environment Setup**
+
+The Dev Container installs the required dependencies:
+
+
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    libgtest-dev \
+    cmake \
+```
+
+**Build Configuration**
+
+CMake is configured to detect and link gtest:
+
+```cmake
+find_package(GTest REQUIRED)
+
+add_executable(run_tests tests/sample_test.cpp)
+target_link_libraries(run_tests GTest::GTest GTest::Main pthread)
+```
+
+---
+## 13. Notes
+
+Some warnings such as "Clock skew detected" may appear during the build process due to time differences between the host system and the container. These warnings do not affect the correctness of the test execution.
