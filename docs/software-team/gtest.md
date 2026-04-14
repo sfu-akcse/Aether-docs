@@ -237,8 +237,7 @@ The following screenshot shows the successful execution of the gtest test suite.
 -   All tests pass successfully
 -   The final output shows [ PASSED ]
 
-![gtest-screenshot](</docs/software-team/resources/images/gtest-output.png>)
-
+![gtest-screenshot](./resources/images/gtest-output.png)
 ---
 
 ## 12. Configuration Summary
