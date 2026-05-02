@@ -26,6 +26,7 @@ const sidebars = {
     "software-team/python-opencv-mediapipe",
     "software-team/logging_tool",
     "software-team/ROS2 & Gazebo Documentation",
+    "software-team/gtest",
     {
       type: "category",
       label: "Setup",
@@ -35,7 +36,9 @@ const sidebars = {
       ],
     },
   ],
-  mechanicalTeamSidebar: ["mechanical-team/overview"],
+  mechanicalTeamSidebar: ["mechanical-team/overview",
+    "mechanical-team/servo_driver"
+  ],
   tutorialSidebar: [
     "intro",
     {
