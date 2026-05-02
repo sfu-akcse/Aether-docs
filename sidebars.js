@@ -25,6 +25,7 @@ const sidebars = {
     "software-team/socket-communication",
     "software-team/python-opencv-mediapipe",
     "software-team/logging_tool",
+    "software-team/gtest",
     {
       type: "category",
       label: "Setup",
