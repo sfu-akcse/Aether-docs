@@ -35,7 +35,7 @@ const sidebars = {
     },
   ],
   mechanicalTeamSidebar: ["mechanical-team/overview",
-                          "mechanical-team/Limb-Architecture-and-DOF"
+    "mechanical-team/servo_driver"
   ],
   tutorialSidebar: [
     "intro",
