@@ -34,8 +34,11 @@ const sidebars = {
       ],
     },
   ],
-  mechanicalTeamSidebar: ["mechanical-team/overview",
-    "mechanical-team/servo_driver"
+  mechanicalTeamSidebar: [
+    "mechanical-team/overview",
+    "mechanical-team/servo_driver",
+    "mechanical-team/wiring-and-firmware",
+    "mechanical-team/Claw-Design-Research-13"
   ],
   tutorialSidebar: [
     "intro",
