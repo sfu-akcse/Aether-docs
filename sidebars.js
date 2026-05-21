@@ -39,6 +39,9 @@ const sidebars = {
   mechanicalTeamSidebar: ["mechanical-team/overview",
     "mechanical-team/servo_driver"
   ],
+  firmwareTeamSidebar: [
+    "firmware-team/overview"
+  ],
   tutorialSidebar: [
     "intro",
     {

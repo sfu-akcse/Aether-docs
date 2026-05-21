@@ -107,6 +107,12 @@ const config = {
           },
           {
             type: "docSidebar",
+            sidebarId: "firmwareTeamSidebar",
+            position: "left",
+            label: "Firmware Team",
+          },
+          {
+            type: "docSidebar",
             sidebarId: "tutorialSidebar",
             position: "left",
             label: "Tutorial",
