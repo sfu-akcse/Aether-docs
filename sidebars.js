@@ -40,7 +40,9 @@ const sidebars = {
     "mechanical-team/servo_driver"
   ],
   firmwareTeamSidebar: [
-    "firmware-team/overview"
+    "firmware-team/overview",
+    "firmware-team/Sockets",
+    "firmware-team/ROS2 & Gazebo Simulation",
   ],
   tutorialSidebar: [
     "intro",
