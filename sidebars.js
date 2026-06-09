@@ -40,7 +40,8 @@ const sidebars = {
     "mechanical-team/servo_driver"
   ],
   firmwareTeamSidebar: [
-    "firmware-team/overview"
+    "firmware-team/overview",
+    "firmware-team/inverse-kinematics-theory",
   ],
   tutorialSidebar: [
     "intro",
