@@ -1,6 +1,6 @@
 /docs/software-team @sfu-akcse/software-team
 /docs/mechanical-team @sfu-akcse/mechanical-team
-/docs/firmware-team @sfu-akcse/software-team/firware-team
+/docs/firmware-team @sfu-akcse/firware-team
 
 docusaurus.config.js @Vincent-Elec @S-ngminL-e @kwanghyukryu @hugokwon5
 sidebars.js @Vincent-Elec @S-ngminL-e @kwanghyukryu @hugokwon5
