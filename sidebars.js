@@ -43,7 +43,9 @@ const sidebars = {
     "mechanical-team/Claw-Design-Research-13"
   ],
   firmwareTeamSidebar: [
-    "firmware-team/overview"
+    "firmware-team/overview",
+    "firmware-team/Sockets",
+    "firmware-team/ROS2 & Gazebo Simulation",
   ],
   tutorialSidebar: [
     "intro",
