@@ -22,6 +22,7 @@ const sidebars = {
 
   softwareTeamSidebar: [
     "software-team/overview",
+    'software-team/software-architecture',
     "software-team/socket-communication",
     "software-team/python-opencv-mediapipe",
     "software-team/logging_tool",
