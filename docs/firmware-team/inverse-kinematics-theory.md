@@ -8,13 +8,23 @@ Inverse kinematics answers this question:
 
 > Given a target position, what shoulder and elbow angles are needed for the robot arm to reach it?
 
-For now, we are starting with 2D version of our arm and later, this can be expanded to include full 3D
+For now, we are starting with 2D version of our arm and later, this may be expanded to include full 3D movement
+
+---
+
+## Desmos visualization
+
+A working Desmos visualization for this 2-link IK theory can be found here:
+
+[2-Link Robot Arm IK Desmos Example](https://www.desmos.com/calculator/ffbbptg7qt)
+
+This can be used to test how changing the target position and link lengths affects the calculated shoulder and elbow angles
 
 ---
 
 ## 1. Coordinate convention
 
-For the first version, we treat the arm as a 2-link planar arm moving in`y-z` plane
+For the first version, we treat the arm as a 2-link planar arm moving in `y-z` plane
 
 - `z` = forward/back distance from the shoulder
 - `y` = up/down distance from the shoulder
@@ -92,8 +102,6 @@ abs(L1 - L2) <= r <= L1 + L2
 
 If the target is outside this range, arm cannot reach it exactly
 
-In firmware, this should become like a constant checking function before sending any motor commands
-
 ---
 
 ## 5. Elbow angle using the law of cosines
@@ -141,15 +149,11 @@ For our implementation, it's the elbow-up configuration since:
 - `L1` goes upward from the shoulder
 - then `L2` goes downward/forward from the elbow to the target
 
-So we would use: `θ2 = -arccos(...)`
-
-for elbow-up
+So we would use: `θ2 = -arccos(...)` for elbow-up
 
 ---
 
 ## 6. Shoulder angle overview
-
-The shoulder angle i would say is more complicated than the elbow angle
 
 The shoulder does not simply point directly at the target because the elbow bends
 
@@ -180,7 +184,7 @@ Because our 2D plane uses:
 
 ```text
 z = forward/back
- y = up/down
+y = up/down
 ```
 
 we calculate:
@@ -287,7 +291,7 @@ Given:
 
 ```text
 L1 = shoulder-to-elbow link length
-L2 = elbow-to-wristlink length
+L2 = elbow-to-wrist link length
 z  = forward/back target coordinate
 y  = up/down target coordinate
 ```
@@ -426,8 +430,8 @@ y = L1 * sin(θ1) + L2 * sin(θ1 + θ2)
 Using the example result:
 
 ```text
-θ1 = 0 degrees
-θ2 = 90 degrees
+θ1 = 90 degrees
+θ2 = -90 degrees
 L1 = 10
 L2 = 10
 ```
@@ -435,16 +439,16 @@ L2 = 10
 Check `z`:
 
 ```text
-z = 10 * cos(0) + 10 * cos(0 + 90)
-z = 10 * 1 + 10 * 0
+z = 10 * cos(90) + 10 * cos(90 + -90)
+z = 10 * 0 + 10 * 1
 z = 10
 ```
 
 Check `y`:
 
 ```text
-y = 10 * sin(0) + 10 * sin(0 + 90)
-y = 10 * 0 + 10 * 1
+y = 10 * sin(90) + 10 * sin(90 + -90)
+y = 10 * 1 + 10 * 0
 y = 10
 ```
 
@@ -456,7 +460,7 @@ So the calculated angles correctly reach:
 
 ---
 
-## 13. Notes for firmware implementation (*******)
+## 13. Notes for firmware implementation
 
 The equations above give theoretical math angles, but actual servo angles may not be the same
 
@@ -495,7 +499,7 @@ This conversion is separate from IK theory and should be tested on physical arm
 
 ---
 
-## 14. What we have currenty (what this file covers)
+## 14. ## 14. What we currently have
 
 For now, this IK-theory covers:
 
@@ -521,6 +525,7 @@ conversion of our theoretical math angles into servo angles
 ## References
 
 - ChatGPT
+- [2-Link Robot Arm IK Desmos Example](https://www.desmos.com/calculator/ffbbptg7qt)
 - https://livephysics.com/cheat-sheets/robotics-inverse-kinematics-reference/
 - https://medium.com/%40manuelmort/inverse-kinematics-of-two-link-planar-arm-geometric-approach-5f3ffdfde16d
 - https://www.youtube.com/watch?v=_3Dy30ltDA0
